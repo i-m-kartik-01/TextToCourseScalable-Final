@@ -7,11 +7,15 @@ on:
 
 jobs:
   ci:
-    name: Basic CI (install only)
+    name: Backend CI
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: server
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -19,47 +23,51 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install dependencies
-        working-directory: server
-        run: npm install
+      - name: Install Dependencies
+        run: npm ci
 
   deploy:
-    name: Deploy to EC2
+    name: Deploy Backend to EC2
     needs: ci
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy to EC2
-        run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          script: |
             set -e
+
+            echo "========== DEPLOY START =========="
 
             cd ${{ secrets.EC2_APP_DIR }}
 
             echo "Pulling latest code..."
             git pull origin main
 
-            echo "Installing production dependencies..."
-            npm install --production
+            cd server
 
-            echo "Restarting API..."
-            pm2 restart texttocourse-api
+            echo "Installing dependencies..."
+            npm install
 
-            echo "Restarting workers..."
-            pm2 restart course-worker || true
-            pm2 restart lesson-worker || true
-            pm2 restart quiz-worker || true
+            echo "Restarting PM2 processes..."
+
+            pm2 restart course-api --update-env
+            pm2 restart course-worker --update-env
+            pm2 restart lesson-worker --update-env
+            pm2 restart quiz-worker --update-env
 
             pm2 save
-            echo "Deployment completed successfully"
-          EOF
+
+            echo "Waiting for server..."
+            sleep 5
+
+            echo "Health Check..."
+            curl -f http://localhost:5010/health
+
+            echo "========== DEPLOY SUCCESS =========="
