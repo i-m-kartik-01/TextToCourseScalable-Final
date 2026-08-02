@@ -20,7 +20,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-console.log("GitHub Actions deployment test");
+
 app.use(express.json());
 app.use((req, res, next) => {
   console.log("========== REQUEST ==========");
