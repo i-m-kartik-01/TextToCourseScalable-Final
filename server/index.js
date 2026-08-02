@@ -22,7 +22,12 @@ app.use(
 );
 
 app.use(express.json());
-
+app.use((req, res, next) => {
+  console.log("========== REQUEST ==========");
+  console.log(req.method, req.originalUrl);
+  console.log("Authorization:", req.headers.authorization);
+  next();
+});
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
