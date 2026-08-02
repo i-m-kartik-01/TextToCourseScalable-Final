@@ -53,7 +53,7 @@ jobs:
 
             echo "========== DEPLOY START =========="
 
-            cd ${{ secrets.EC2_APP_DIR }}
+            cd /home/ubuntu/TextToCourseScalable-Final
 
             echo "Pulling latest code..."
             git pull origin main
