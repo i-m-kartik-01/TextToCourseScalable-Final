@@ -55,15 +55,13 @@ jobs:
 
             cd /home/ubuntu/TextToCourseScalable-Final
 
-            echo "Pulling latest code..."
-            git pull origin main
+            echo "Updating source..."
+            git fetch origin
+            git reset --hard origin/main
 
             cd server
 
-            echo "Installing dependencies..."
             npm install
-
-            echo "Restarting PM2 processes..."
 
             pm2 restart course-api --update-env
             pm2 restart course-worker --update-env
@@ -72,10 +70,8 @@ jobs:
 
             pm2 save
 
-            echo "Waiting for server..."
             sleep 5
 
-            echo "Health Check..."
             curl -f http://localhost:5010/health
 
             echo "========== DEPLOY SUCCESS =========="
