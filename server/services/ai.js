@@ -14,7 +14,9 @@ async function getClient() {
   return client;
 }
 
-const MODEL_NAME = "gemini-2.5-flash"; 
+const MODEL_NAME = "gemini-flash-latest"; 
+console.log("AI MODEL =", MODEL_NAME);
+console.log("AI FILE =", __filename);
 const cleanAndParseJSON = (aiResponse) => {
   try {
     // 1. If it's already an object (some SDK versions do this automatically)
@@ -34,13 +36,14 @@ const cleanAndParseJSON = (aiResponse) => {
 };
 
 async function generateCourseOutline(topic) {
+  console.log("========== GENERATE COURSE ==========");
   const aiClient = await getClient();
   const prompt = getCourseOutlinePrompt(topic);
 
   const result = await aiClient.models.generateContent({
     model: MODEL_NAME,
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: { response_mime_type: "application/json" }
+    config: { responseMimeType: "application/json" }
   });
 
   // Senior Tip: The new SDK uses result.text or result.response.text() 

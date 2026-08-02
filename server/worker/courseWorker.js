@@ -9,7 +9,7 @@ const Lesson = require("../models/lessonModel");
 const aiService = require("../services/ai");
 
 mongoose.set("bufferCommands", false);
-
+console.log("RabbitMQ URL:", process.env.RABBITMQ_URL);
 async function retryLLM(fn, retries = 5) {
   let delay = 3000;
 

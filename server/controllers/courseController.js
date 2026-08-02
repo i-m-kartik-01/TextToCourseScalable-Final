@@ -12,8 +12,9 @@ const Course = require("../models/courseModel");
  */
 exports.generateCourse = async (req, res) => {
   try {
+    console.log("========== GENERATE COURSE ==========");
     const { topic } = req.body;
-
+    console.log("2", topic);
     if (!topic || topic.trim().length < 3) {
       return res.status(400).json({
         message: "Topic must be at least 3 characters",
@@ -21,14 +22,14 @@ exports.generateCourse = async (req, res) => {
     }
 
     const userId = req.auth?.payload?.sub || "dev-user";
-
+    console.log("3", userId); 
     // 1. Create course immediately
     const course = await Course.create({
       title: topic,
       createdBy: userId,
       status: "PENDING",
     });
-
+    console.log("4", course._id);
     // 2. Push job to RabbitMQ
     const channel = getChannel();
     channel.sendToQueue(
@@ -42,7 +43,7 @@ exports.generateCourse = async (req, res) => {
       ),
       { persistent: true }
     );
-
+    console.log("5", course._id);
     // 3. Respond immediately
     return res.status(202).json({
       message: "Course generation started",

@@ -26,7 +26,7 @@ app.use(express.json());
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
-
+console.log("RabbitMQ URL:", process.env.RABBITMQ_URL);
 app.use("/api", courseRoutes);
 app.use("/api", lessonRoutes);
 app.use("/api", moduleRoutes);
