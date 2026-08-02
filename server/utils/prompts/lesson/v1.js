@@ -7,12 +7,15 @@ const lessonPromptV1 = ({ courseTitle, moduleTitle, lessonTitle }) => `
 - Specific Lesson: "${lessonTitle}"
 
 ### RULES:
-1. Provide 2-3 learning objectives.
+1. Provide 4-5 learning objectives.
 2. The 'content' array must include: 'heading', 'paragraph', and 'mcq' blocks.
 3. Include a 'video_query' string for a YouTube search relevant to "${lessonTitle}".
 4. Add a 'code' block ONLY if the subject requires technical implementation.
 5. Provide 4-5 MCQs with an 'explanation' field for the correct answer.
-6. Minimum 2500 words lesson (most important)
+6. Must be exhaustive, discussing all possible concepts in very depth
+7. Must include rigorous mathematics if requried for proofs, derivations or in general if required
+8. Give proper reasoning for each concept taught
+
 ### OUTPUT: RAW JSON ONLY (No Markdown)
 {
   "title": "${lessonTitle}",
