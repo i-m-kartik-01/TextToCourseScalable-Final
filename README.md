@@ -116,7 +116,7 @@ This provides continuous delivery with no manual server access required.
 
 The backend domain for project is
 ```bash
-    https://coursegen.shop
+    https://coursegene.shop
 ```
 ## Run Locally
 
