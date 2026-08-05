@@ -188,3 +188,21 @@ Because Render costs much more for background workers, and EC2 gives a full mach
 AWS EC2 only gives an IP address, have to buy a domain and include SSL myself, also vercel requires only https, hence SSL certificates are mandatory, so for reverse proxy and SSL certificate NGNIX and Let's Encrypt.
 
 
+Design:
+  AI Factory
+                  |
+      -------------------------
+      |          |           |
+   Gemini     Groq       OpenAI
+const ai = AIProviderFactory.create(process.env.PROVIDER);
+
+Now:
+
+if PROVIDER=gemini, return GeminiProvider
+if PROVIDER=groq, return GroqProvider
+if PROVIDER=openai, return OpenAIProvider
+
+The rest of your application doesn't care which one it got.
+
+That is the Factory Pattern.
+
