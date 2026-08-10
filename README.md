@@ -125,7 +125,7 @@ To deploy this project on local machine,
 Clone the project
 
 ```bash
-  git clone https://link-to-project
+  git clone https://github.com/i-m-kartik-01/TextToCourseScalable-Final
 ```
 
 for Backend, install dependencies
