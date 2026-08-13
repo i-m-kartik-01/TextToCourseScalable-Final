@@ -1,5 +1,4 @@
-
- Text To Course features for users:
+# Text To Course features for users:
 
 This Website is for everyone, because no matter, what your age, profession, gender, etc., everyone keeps learning something throughout their lifetime. And for learning in most efficient way today, we have AI. So just type the topic name in search bar and it will generate a really good comprehensive course, that starts from basics, heads to complex and advanced concepts, as you go forward.
 
