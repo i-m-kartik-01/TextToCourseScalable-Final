@@ -143,6 +143,36 @@ npm install
 npm start
 ```
 
+### Environment Variables
+
+Both the backend and the frontend read their configuration from a `.env` file. Create one in each directory before starting the app.
+
+`server/.env`
+
+| Variable | Description |
+| :------- | :---------- |
+| `PORT` | Port the Express API listens on |
+| `NODE_ENV` | `development` locally, `production` on EC2 |
+| `MONGO_URI` | MongoDB connection string |
+| `RABBITMQ_URL` | RabbitMQ connection string used by the API and workers |
+| `REDIS_URL` | Redis connection string used for caching YouTube video links |
+| `GEMINI_API_KEY` | Google Gemini API key used for course, lesson and quiz generation |
+| `YOUTUBE_API_KEY` | YouTube Data API key used to attach videos to lessons |
+| `AUTH0_DOMAIN` | Auth0 tenant domain used to validate JWTs |
+| `AUTH0_AUDIENCE` | Auth0 API identifier used to validate JWTs |
+| `FRONTEND_URL` | Origin allowed by CORS |
+
+`client/.env`
+
+| Variable | Description |
+| :------- | :---------- |
+| `REACT_APP_API_BASE_URL` | Base URL of the backend API |
+| `REACT_APP_AUTH0_DOMAIN` | Auth0 tenant domain |
+| `REACT_APP_AUTH0_CLIENT_ID` | Auth0 application client ID |
+| `REACT_APP_AUTH0_AUDIENCE` | Auth0 API identifier, must match `AUTH0_AUDIENCE` on the server |
+
+Note that the API and each worker are separate long-running processes, so run the four backend commands above in four separate terminals.
+
 ## Design Decisions
 
 ### RabbitMQ instead of synchronous requests and workers separated:
