@@ -14,7 +14,7 @@ async function getClient() {
   return client;
 }
 
-const MODEL_NAME = "gemini-3.5-flash-lite"; 
+const MODEL_NAME = "gemini-3.5-flash-lite" ; 
 console.log("AI MODEL =", MODEL_NAME);
 console.log("AI FILE =", __filename);
 const cleanAndParseJSON = (aiResponse) => {
