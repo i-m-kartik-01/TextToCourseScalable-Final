@@ -34,10 +34,6 @@ Results are written to MongoDB and served to users when ready. This architecture
 
 **CI/CD:** Github Actions
 
-## Architecture
-
-<img width="2451" height="1292" alt="image" src="https://github.com/user-attachments/assets/a8c8092e-9c70-43a6-a9fc-5981d399911d" />
-
 ## Some important API Reference
 
 #### Get all course
