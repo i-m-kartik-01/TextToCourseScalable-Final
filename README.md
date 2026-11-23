@@ -218,28 +218,128 @@ Because Render costs much more for background workers, and EC2 gives a full mach
 
 AWS EC2 only gives an IP address, so we have to buy a domain and include SSL ourselves. Vercel requires HTTPS, hence SSL certificates are mandatory. NGINX is used for reverse proxying and Let's Encrypt provides the SSL certificate.
 
-## Design Pattern: Factory Pattern
 
-The application uses an AI Factory to abstract the underlying AI provider from the rest of the application.
+## 7. High-Level Architecture
 
-```text
-                         AI Factory
-                              |
-             -------------------------
-             |          |           |
-          Gemini      Groq        OpenAI
+The system follows an **Asynchronous Decoupled Hexagonal Architecture**. The user-facing HTTP tier is decoupled from expensive generative workloads via an AMQP message broker.
+
+```mermaid
+flowchart TD
+    subgraph ClientLayer["Frontend Client Tier (Vercel)"]
+        UI["React SPA (Tailwind CSS)"]
+        AuthClient["Auth0 React SDK"]
+    end
+
+    subgraph IngressLayer["Edge & Ingress Tier (AWS EC2)"]
+        DNS["Custom Domain (coursegen.shop)"]
+        Nginx["Nginx Reverse Proxy (SSL / Let's Encrypt)"]
+    end
+
+    subgraph BackendApp["Application Tier (Node.js / PM2)"]
+        API["Express 5 REST API Gateway (:5010)"]
+        AuthMiddleware["JWT Verification (Auth0 JWKS)"]
+    end
+
+    subgraph MessageBroker["Message Queue Tier (RabbitMQ Broker)"]
+        Q_Course["Queue: course_generation"]
+        Q_Lesson["Queue: lesson_generation"]
+        Q_Quiz["Queue: quiz_generation"]
+    end
+
+    subgraph WorkerPool["Asynchronous Worker Tier (PM2 Managed)"]
+        W_Course["Course Worker (prefetch=1)"]
+        W_Lesson["Lesson Worker (prefetch=1)"]
+        W_Quiz["Quiz Worker (prefetch=1)"]
+    end
+
+    subgraph DataStorage["Persistence & Cache Tier"]
+        Mongo[("MongoDB Atlas Database\n(Courses, Modules, Lessons, Quizzes, Users)")]
+        RedisCache[("Redis In-Memory Cache\n(video:lessonId, TTL=3600s)")]
+    end
+
+    subgraph ExternalServices["External Cloud & AI APIs"]
+        GeminiAPI["Google Gemini API\n(gemini-flash-latest)"]
+        YouTubeAPI["Google YouTube Data API v3"]
+        GoogleTTS["Google Cloud TTS API\n(en-IN-Wavenet-D)"]
+        Auth0Server["Auth0 Identity Cloud"]
+    end
+
+    %% Client Interactions
+    UI -->|HTTPS / REST| DNS
+    DNS --> Nginx
+    Nginx -->|Proxy pass localhost:5010| API
+    UI -.->|OAuth2 Login| AuthClient
+    AuthClient <-->|OIDC Token Exchange| Auth0Server
+
+    %% API Gateway Processing
+    API --> AuthMiddleware
+    AuthMiddleware -.->|Validate RS256 Key Set| Auth0Server
+    API -->|Read Operations / Metadata| Mongo
+    API -->|Enqueue Persistent Job| Q_Course
+    API -->|Enqueue Persistent Job| Q_Lesson
+    API -->|Enqueue Persistent Job| Q_Quiz
+    API <-->|Video Cache Check| RedisCache
+    API -->|Cache Miss Video Lookup| YouTubeAPI
+    API -->|On-demand Audio Request| GoogleTTS
+
+    %% Queue to Worker Distribution
+    Q_Course -->|Consume Message| W_Course
+    Q_Lesson -->|Consume Message| W_Lesson
+    Q_Quiz -->|Consume Message| W_Quiz
+
+    %% Worker Execution
+    W_Course <-->|Generate Outline| GeminiAPI
+    W_Course -->|Persist Modules & Lessons| Mongo
+    W_Lesson <-->|Generate Content & MCQs| GeminiAPI
+    W_Lesson -->|Enrich Lesson Data| Mongo
+    W_Quiz <-->|Generate 15-Question Exam| GeminiAPI
+    W_Quiz -->|Persist Course Quiz| Mongo
 ```
 
-```js
-const ai = AIProviderFactory.create(process.env.PROVIDER);
+---
+
+
+## 4. Core User Journey
+
+The operational journey represents an automated lifecycle loop executed in two sequential phases:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operator as Growth Team / System Operator
+    participant CLI as Orchestrator (main.py)
+    participant KB as Knowledge Bank Engine
+    participant Ingest as Data Ingestion & ML
+    participant Comm as Communication Engine
+    participant Learn as Learning Engine (MAB / Stats)
+    participant Storage as File Storage (data/output/)
+
+    Note over Operator,Storage: Phase 1: Iteration 0 (Initial Strategy Generation)
+    Operator->>CLI: Execute iteration0 (user_data.csv, knowledge_bank.pdf)
+    CLI->>KB: Ingest PDF & Extract Intelligence
+    KB-->>CLI: company_north_star.json, feature_goal_map.json, allowed_tone_hook_matrix.json
+    CLI->>Ingest: Ingest User Data, Map Schema, Train XGBoost/LightGBM
+    Ingest-->>CLI: user_segments.csv, churn_model.pkl, engagement_model.pkl
+    CLI->>Comm: Build Goals, Map Themes, Generate Templates, Optimize Timing
+    Comm-->>CLI: message_templates.csv, timing_recommendations.csv, user_notification_schedule.csv
+    CLI->>Learn: Initialize Multi-Armed Bandit (Beta(1,1) priors)
+    Learn-->>CLI: bandit_state.json
+    CLI->>Storage: Persist All Iteration 0 Artifacts
+    CLI-->>Operator: Iteration 0 Complete (Strategy & Schedule Ready)
+
+    Note over Operator,Storage: Phase 2: Live Dispatch & Telemetry Ingestion (Iteration 1)
+    Operator->>CLI: Execute iteration1 (user_data.csv, experiment_results.csv)
+    CLI->>Storage: Load Iteration 0 Strategy & State
+    CLI->>Learn: Classify Performance (GOOD / NEUTRAL / BAD)
+    CLI->>Learn: Run Dual Bayesian & Frequentist A/B Testing
+    CLI->>Learn: Update Bandit Arms (Alpha/Beta updates) & Identify Winners/Losers
+    Learn-->>CLI: template_rankings_bandit.csv, statistical_analysis.csv
+    CLI->>Comm: Re-optimize Timing & Filter Templates (Suppress Losers, Boost Winners)
+    Comm-->>CLI: message_templates_improved.csv, timing_recommendations_improved.csv
+    CLI->>Learn: Compile Causal Delta Report
+    Learn-->>CLI: learning_delta_report.csv
+    CLI->>Comm: Generate Improved 7-Day Schedule
+    Comm-->>CLI: user_notification_schedule_improved.csv
+    CLI->>Storage: Persist All Iteration 1 Artifacts
+    CLI-->>Operator: Iteration 1 Complete (System Learned & Re-optimized)
 ```
-
-Now:
-
-* If `PROVIDER=gemini`, return `GeminiProvider`
-* If `PROVIDER=groq`, return `GroqProvider`
-* If `PROVIDER=openai`, return `OpenAIProvider`
-
-The rest of the application doesn't care which provider it receives. This makes it easy to switch AI providers without changing the core course-generation logic.
-
-That is the **Factory Pattern**.
